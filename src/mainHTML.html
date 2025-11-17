@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        (title name goes here)
+    </title>
+  </head>
+  <body>
+    <div class="container">
+    <header>(title name also goes here)</header>
+    <nav>
+      <ul>
+        <li>Link 1</li>
+        <li>Link 2</li>
+        <li>Link 3</li>
+      </ul>
+    </nav>
+    <main>
+
+    </main>
+  </body>
+
+</html>
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: sans-serif;
+  }
+
+  .container {
+    display: grid;
+    grid-template-rows: 60px 1fr; 
+    grid-template-columns: 200px 1fr; 
+    grid-template-areas:
+      "header header"
+      "nav main";
+    height: 100%;
+  }
+
+  header {
+    grid-area: header;
+    background: #4CAF50;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  nav {
+    grid-area: nav;
+    background: #f4f4f4;
+    padding: 20px;
+  }
+
+  main {
+    grid-area: main;
+    background: #fff;
+    padding: 20px;
+  }
+</style>
