@@ -63,7 +63,6 @@ let state = {
   energyUsed: 0,
 };
 
-// Visual rim rotation state (for animation)
 let rimLeftVisual = 0;
 let rimRightVisual = 0;
 
@@ -97,12 +96,10 @@ function clearcanvas() {
   ctx.clearRect(0,0,W,H);
 }
 
-function drawBoardBase() {
+function drawCanvasBase() {
   ctx.save();
   ctx.translate(cx, cy);
-}
 
-function drawCanvasBase() {
   ctx.beginPath();
   ctx.arc(0,0, BOARD_RADIUS+6, 0, Math.PI*2);
   const grd = ctx.createRadialGradient(-BOARD_RADIUS*0.3, -BOARD_RADIUS*0.3, BOARD_RADIUS*0.1, 0,0, BOARD_RADIUS);
@@ -110,9 +107,14 @@ function drawCanvasBase() {
   grd.addColorStop(1, 'rgba(0,0,0,0.28)');
   ctx.fillStyle = grd;
   ctx.fill();
+
+  ctx.restore();
 }
 
 function drawCanvasBackgrounds() {
+  ctx.save();
+  ctx.translate(cx, cy);
+
   //white top
   ctx.beginPath();
   ctx.moveTo(0,0);
@@ -141,10 +143,13 @@ function drawCanvasBackgrounds() {
 }
 
 function drawCircles() {
+  ctx.save();
+  ctx.translate(cx, cy);
+  
   for (const c of state.circles) {
     const { x, y } = polarToXY(c.r, c.theta);
     ctx.beginPath();
-    ctx.arc(x, y, c.radius, 0, Math.PI*2);
+    ctx.arc(x - cx, y - cy, c.radius, 0, Math.PI*2);
     if (c.owner === 'white') {
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.strokeStyle = 'rgba(0,0,0,0.35)';
@@ -156,6 +161,8 @@ function drawCircles() {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
+  
+  ctx.restore();
 }
 
 function drawCanvasTickMarks() {
@@ -198,7 +205,6 @@ function drawCanvasTickMarks() {
 
 function draw() {
   clearcanvas();
-  drawBoardBase();
   drawCanvasBase();
   drawCanvasBackgrounds();
   drawCircles();
@@ -267,80 +273,92 @@ function findCircleAt(x, y) {
 function checkValidPlacement(player, energy, x, y) {
   if (actionDoneThisTurn) {
     log(`${player} already acted this turn. Press End Turn to animate rotation.`);
-    return null;
+    return false;
   }
-
   if (energy <= 0 || energy > state.players[player].energy) {
-    log(`Invalid energy spent by ${player} action nullified`);
-    return null;
+    log(`Invalid energy spent by ${player} — action nullified.`);
+    return false;
   }
   if (toPolar(x, y).r > BOARD_RADIUS - 6) {
     log(`${player} tried to place outside the board.`);
-    return;
+    return false;
   }
   const newRadius = Math.max(6, energy * ENERGY_TO_RADIUS);
   if (collidesOpponent(x, y, newRadius, player)) {
     log(`${player} cannot place, overlapping opponent's circle.`);
-    return;
+    return false;
   }
+  return true;
 }
 
 // add circle into game state
-function placeCircle(x, y, energy) {
+function placeCircle(player, energy, x, y) {
   const pol = toPolar(x, y);
+  const radius = Math.max(6, energy * ENERGY_TO_RADIUS);
   state.circles.push({
     owner: player,
     r: pol.r,
     theta: pol.theta,
+    radius
   });
-  state.energyUsed = energy
-
-  state.players[player].energy -= energy;
   log(`${player} placed a circle spending ${energy} energy.`);
 }
 
 // check strengthen action
-function checkValidStrengthen(targetCircle, player) {
+function checkValidStrengthen(targetCircle, player, energy) {
   if (!targetCircle) {
     log('No target circle to strengthen.');
-    return;
+    return false;
   }
   if (targetCircle.owner !== player) {
     log(`${player} cannot strengthen opponent's circle.`);
-    return;
+    return false;
   }
+  if (energy <= 0 || energy > state.players[player].energy) {
+    log(`Invalid energy spent by ${player} — strengthen nullified.`);
+    return false;
+  }
+  return true;
 }
 
 // add energy to circle
-function strengthenCircle(targetCircle,) {
-    
-    // increase its radius immediately
-    const grow = Math.max(1, energy * ENERGY_TO_RADIUS);
-    targetCircle.radius += grow;
-
-    state.players[player].energy -= energy;
-    log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy.`);
+function strengthenCircle(targetCircle, player, energy) {
+  const grow = Math.max(1, energy * ENERGY_TO_RADIUS);
+  if (typeof targetCircle.radius !== 'number') targetCircle.radius = 6;
+  targetCircle.radius += grow;
+  
+  log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy.`);
 }
 
 // apply click action onto canvas
 function applyAction({ type, x, y, energy, targetCircle = null }) {
   const player = state.current;
+  let storeState = state;
+  storeState.pop();
+  state.history.push(JSON.parse(JSON.stringify(storeState)));
+  undoBtn.disabled = false;
 
   if (type === 'place') {
-    if (checkValidPlacement(player, energy, x, y) === null) {
-      return
+    if (checkValidPlacement(player, energy, x, y)) {
+      placeCircle(player, energy, x, y);
+    } else {
+      state.history.pop();
+      return;
     }
-    placeCircle(x, y, energy);
+    
   } else if (type === 'strengthen') {
-    if (checkValidStrengthen(player, targetCircle) === null) {
-      return
+    if (checkValidStrengthen(targetCircle, player, energy)) {
+      strengthenCircle(targetCircle, player, energy);
+    } else {
+      state.history.pop();
+      return;
     }
-    strengthenCircle(targetCircle);
   }
 
+  state.energyUsed = energy;
+  state.players[player].energy -= energy;
   actionDoneThisTurn = true;
-  state.history.push(JSON.parse(JSON.stringify(state)));
-  undoBtn.disabled = false;
+  
   updateUI();
   draw();
 }
@@ -354,14 +372,14 @@ function applyRotations() {
 
 // End turn
 function endTurn() {
-  endTurnBtn.disabled = true;
   if (!actionDoneThisTurn) return;
+  endTurnBtn.disabled = true;
   applyRotations();
   nextTurn();
   updateUI();
   draw();
   log('Turn ended.');
-  endTurnBtn.disabled = true;
+  endTurnBtn.disabled = false;
 }
 
 // Undo
@@ -385,10 +403,9 @@ function resetGame() {
     current: 'white',
     circles: [],
     turnCount: 0,
-    history: []
+    history: [],
+    energyUsed: 0
   };
-  pendingRotations.left = 0;
-  pendingRotations.right = 0;
   rimLeftVisual = 0;
   rimRightVisual = 0;
   actionDoneThisTurn = false;
@@ -412,7 +429,7 @@ resetBtn.addEventListener('click', resetGame);
 // -handle clicks
 canvas.addEventListener('click', (ev) => {
   if (actionDoneThisTurn) {
-    log('Action already taken this turn — press End Turn to animate rotation (or Undo).');
+    log('Action already taken this turn — press End Turn (or Undo).');
     return;
   }
   const rect = canvas.getBoundingClientRect();
