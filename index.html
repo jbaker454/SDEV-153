@@ -43,7 +43,7 @@
         <div style="display:flex; gap:12px; align-items:center;">
           <div class="playerLabel"><div class="dot whiteDot"></div><div class="muted">White</div></div>
           <div class="playerLabel"><div class="dot blackDot"></div><div class="muted">Black</div></div>
-          <div style="margin-left:auto" class="muted">Click the board to place / strengthen</div>
+          <div style="margin-left:auto" class="muted">Click the board to place / strengthen (one action per turn)</div>
         </div>
         <div style="height:18px"></div>
         <canvas id="board" width="720" height="720"></canvas>
@@ -98,16 +98,17 @@
             <input id="spendRange" type="range" min="1" max="200" value="20">
             <div style="width:48px;text-align:right" id="spendValue">20</div>
           </div>
-          <div class="muted small">Tip: choose how much energy to spend, then click the board to apply it.</div>
+          <div class="muted small">Tip: choose how much energy to spend, then click the board to apply it. After your action, press End Turn to animate rotation.</div>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:6px">
+          <button id="endTurnBtn" disabled>End Turn (Animate)</button>
           <button id="undoBtn" disabled>Undo last</button>
           <button id="resetBtn">Reset game</button>
         </div>
 
         <div style="margin-top:8px" class="muted small">
-          Rules summary: one action per turn (place or strengthen). Can't place overlapping opponent circles. Each turn the next player gains +50 energy (cap 200). 50 energy → 1 radian rotation for the half where the circle sits.
+          Rules summary: one action per turn (place or strengthen). Can't place overlapping opponent circles. Each turn the next player receives +50 energy (cap 200) after the first round. 50 energy → 1 radian of rotation for the half where the action happened. Rotation is animated when you click "End Turn".
         </div>
       </div>
 
