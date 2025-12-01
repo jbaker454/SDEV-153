@@ -1,126 +1,33 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Circular Energy Board — Two-player</title>
-  <style>
-    :root {
-      --bg: #0b0b0f;
-      --panel: #111217;
-      --accent: #2dd4bf;
-      --muted: #9aa0a6;
-    }
-    html,body{height:100%;margin:0;background:var(--bg);color:#e6eef6;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;}
-    .wrap { display:flex; flex-direction:row; gap:20px; padding:20px; box-sizing:border-box; height:100%; }
-    .left { width:760px; display:flex; flex-direction:column; gap:12px; align-items:center; }
-    canvas { background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.02), transparent 30%), linear-gradient(180deg,#0b0b0f,#0f1220); border-radius:12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
-    .boardBox { padding:18px; background:linear-gradient(180deg,#0f1220,#0b0b0f); border-radius:14px; }
-    .right { flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px; }
-    .card { background:var(--panel); padding:12px; border-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
-    .energyRow { display:flex; gap:8px; align-items:center; justify-content:space-between; }
-    .playerLabel { display:flex; gap:8px; align-items:center; }
-    .dot { width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,0.12); }
-    .whiteDot { background: #fff; }
-    .blackDot { background: #000; }
-    .bar { width:180px; height:14px; border-radius:8px; background:rgba(255,255,255,0.06); overflow:hidden; border:1px solid rgba(255,255,255,0.03); }
-    .barFill { height:100%; width:0%; background: linear-gradient(90deg,#7dd3fc,#60a5fa); transition:width 300ms ease; }
-    .controls { display:flex; flex-direction:column; gap:8px; }
-    .row { display:flex; gap:8px; align-items:center; }
-    input[type="range"] { width:100%; }
-    button { background:var(--accent); color:#04201f; border:0; padding:8px 12px; border-radius:8px; font-weight:600; cursor:pointer; }
-    .muted { color:var(--muted); font-size:13px; }
-    .small { font-size:13px; color:#cfeef3; }
-    .legend { display:flex; gap:10px; align-items:center; margin-top:6px; }
-    .legend .item { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); }
-    .footer { margin-top:auto; font-size:12px; color:var(--muted); text-align:center; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="left">
-      <div class="card boardBox">
-        <div style="display:flex; gap:12px; align-items:center;">
-          <div class="playerLabel"><div class="dot whiteDot"></div><div class="muted">White</div></div>
-          <div class="playerLabel"><div class="dot blackDot"></div><div class="muted">Black</div></div>
-          <div style="margin-left:auto" class="muted">Click the board to place / strengthen (one action per turn)</div>
-        </div>
-        <div style="height:18px"></div>
-        <canvas id="board" width="720" height="720"></canvas>
-        <div class="legend">
-          <div class="item"><div style="width:12px;height:12px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,0.6)"></div> Your pieces</div>
-          <div class="item"><div style="width:12px;height:12px;border-radius:50%;background:#000;border:1px solid rgba(255,255,255,0.06)"></div> Opponent pieces</div>
-        </div>
-      </div>
-    </div>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Energy Board Game</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Energy Board Game</h1>
+    <div id="turnIndicator" style="font-size: 20px; margin-bottom: 10px;"></div>
 
-    <div class="right">
-      <div class="card">
-        <div class="energyRow">
-          <div style="display:flex;flex-direction:column;">
-            <div class="playerLabel"><div class="dot whiteDot"></div><strong id="whiteLabel">White</strong></div>
-            <div class="muted small">Energy</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;">
-            <div class="bar"><div id="whiteBar" class="barFill"></div></div>
-            <div id="whiteEnergyText" class="muted small">100 / 200</div>
-          </div>
-        </div>
 
-        <hr style="opacity:0.06;margin:10px 0;">
+    <label>
+    <input type="checkbox" id="autoEndTurn" /> Auto End Turn
+    </label>
+    <br />
+    <label>
+    <input type="checkbox" id="autoDisableStrengthen" /> Auto-disable Strengthen
+    </label>
+    <br />
+    <label>
+    <input type="checkbox" id="strengthenMode" /> Strengthen Mode
+    </label>
 
-        <div class="energyRow">
-          <div style="display:flex;flex-direction:column;">
-            <div class="playerLabel"><div class="dot blackDot"></div><strong id="blackLabel">Black</strong></div>
-            <div class="muted small">Energy</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;">
-            <div class="bar"><div id="blackBar" class="barFill"></div></div>
-            <div id="blackEnergyText" class="muted small">100 / 200</div>
-          </div>
-        </div>
-      </div>
 
-      <div class="card controls">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div class="muted small">Current player</div>
-            <div id="currentPlayer" style="font-weight:700">White</div>
-          </div>
-          <div>
-            <label><input type="checkbox" id="strengthenMode"> Strengthen mode</label>
-          </div>
-        </div>
+    <canvas id="gameCanvas" width="600" height="600" style="border:1px solid black;"></canvas>
+    <br />
+    <button id="endTurnBtn">End Turn</button>
 
-        <div>
-          <div class="muted small">Energy to spend</div>
-          <div class="row">
-            <input id="spendRange" type="range" min="1" max="200" value="20">
-            <div style="width:48px;text-align:right" id="spendValue">20</div>
-          </div>
-          <div class="muted small">Tip: choose how much energy to spend, then click the board to apply it. After your action, press End Turn to animate rotation.</div>
-        </div>
 
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <button id="endTurnBtn" disabled>End Turn (Animate)</button>
-          <button id="undoBtn" disabled>Undo last</button>
-          <button id="resetBtn">Reset game</button>
-        </div>
-
-        <div style="margin-top:8px" class="muted small">
-          Rules summary: one action per turn (place or strengthen). Can't place overlapping opponent circles. Each turn the next player receives +50 energy (cap 200) after the first round. 50 energy → 1 radian of rotation for the half where the action happened. Rotation is animated when you click "End Turn".
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="muted small">Game log</div>
-        <div id="log" style="height:160px;overflow:auto;margin-top:8px;font-size:13px;color:#cfeef3"></div>
-      </div>
-
-      <div class="footer">Built with JS + Canvas · You can edit constants in <code>script.js</code></div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+    <script src="game.js"></script>
+  </body>
 </html>
