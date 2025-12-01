@@ -1,11 +1,16 @@
 /*
 
 main code for circle game 
-concept designer: -complete-
+concept designe: -complete-
 initial framework generation: -complete-
 Review, Abstactions, and Bug fixes: -current-
-Added Platform Assecibility: -pending-
-Added Disability Assecibility: -pending-
+--add player turn indicator
+--hook up auto end turn
+--hook up auto disable strengthen
+--add player specific placement feature
+--add error handling and type verification (potential strict typing)
+Add Platform Assecibility: -pending-
+Add Disability Assecibility: -pending-
 account creation and Security: -pending-
 
 */ 
@@ -271,23 +276,17 @@ function checkValidPlacement(player, energy, x, y) {
   }
   if (toPolar(x, y).r > BOARD_RADIUS - 6) {
     log(`${player} tried to place outside the board.`);
-    // revert history push
-    state.history.pop();
+    return;
+  }
+  const newRadius = Math.max(6, energy * ENERGY_TO_RADIUS);
+  if (collidesOpponent(x, y, newRadius, player)) {
+    log(`${player} cannot place, overlapping opponent's circle.`);
     return;
   }
 }
 
 // add circle into game state
 function placeCircle(x, y, energy) {
-  const newRadius = Math.max(6, energy * ENERGY_TO_RADIUS);
-
-  if (collidesOpponent(x, y, newRadius, player)) {
-    log(`${player} cannot place overlapping opponent circle.`);
-    state.history.pop();
-    return;
-  }
-
-  // add circle in polar coords (theta stores current angle; rotation not applied yet)
   const pol = toPolar(x, y);
   state.circles.push({
     owner: player,
@@ -296,20 +295,12 @@ function placeCircle(x, y, energy) {
   });
   state.energyUsed = energy
 
-  // queue rotation for the half where this circle sits
-  if (pol.theta < Math.PI) {
-    // bottom half (theta < π) -> bottom is white side in our coordinate mapping; treat as left/bottom half in pendingRotations.left
-    pendingRotations.left += deltaAngle;
-  } else {
-    pendingRotations.right += deltaAngle;
-  }
-
   state.players[player].energy -= energy;
-  log(`${player} placed a circle spending ${energy} energy. Radius ${newRadius.toFixed(1)} px. Queued rotation ${(deltaAngle).toFixed(2)} rad.`);
+  log(`${player} placed a circle spending ${energy} energy.`);
 }
 
 // check strengthen action
-function checkValidStrengthen(targetCircle,player) {
+function checkValidStrengthen(targetCircle, player) {
   if (!targetCircle) {
     log('No target circle to strengthen.');
     return;
@@ -328,7 +319,7 @@ function strengthenCircle(targetCircle,) {
     targetCircle.radius += grow;
 
     state.players[player].energy -= energy;
-    log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy. Queued rotation ${(deltaAngle).toFixed(2)} rad.`);
+    log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy.`);
 }
 
 // apply click action onto canvas
@@ -452,4 +443,4 @@ canvas.addEventListener('click', (ev) => {
 // Init
 updateUI();
 draw();
-log('Game started. White goes first with 100 energy. Choose energy then click the board to act. After acting press End Turn to animate the rotation.');
+log('Game started. White goes first with 100 energy. Choose energy then click the board to act. After acting press End Turn.');
