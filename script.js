@@ -333,9 +333,13 @@ function strengthenCircle(targetCircle, player, energy) {
 // apply click action onto canvas
 function applyAction({ type, x, y, energy, targetCircle = null }) {
   const player = state.current;
-  let storeState = state;
-  storeState.pop();
-  state.history.push(JSON.parse(JSON.stringify(storeState)));
+  state.history.push({
+    players: JSON.parse(JSON.stringify(state.players)),
+    current: state.current,
+    circles: JSON.parse(JSON.stringify(state.circles)),
+    turnCount: state.turnCount,
+    energyUsed: state.energyUsed
+  });
   undoBtn.disabled = false;
 
   if (type === 'place') {
