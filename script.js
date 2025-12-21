@@ -4,7 +4,6 @@ main code for circle game
 concept designe: -complete-
 initial framework generation: -complete-
 Review, Abstactions, and Bug fixes: -current-
---add player turn indicator
 --hook up auto end turn
 --hook up auto disable strengthen
 --add player specific placement feature
@@ -19,18 +18,53 @@ account creation and Security: -pending-
 const MAX_ENERGY = 200;
 const ENERGY_PER_TURN = 50;
 const START_ENERGY = 100;
-const ENERGY_TO_RADIUS = 1 / 4; // px per energy unit
 const ROTATION_PER_ENERGY = 1 / 50; // radians per energy (50 energy = 1 radian)
-const ROTATION_ANIM_MS = 1350; // animation duration
+const DefualtBoardRadius = 400; //px
 
-// Canvas setup
-const canvas = document.getElementById('board');
-const ctx = canvas.getContext('2d');
-const W = canvas.width;
-const H = canvas.height;
-const cx = W / 2;
-const cy = H / 2;
-const BOARD_RADIUS = Math.min(W, H) * 0.43;
+// Canvas setup (moved into a class so size can be changed at runtime)
+// width, height, cx, cy, BOARD_RADIUS, BOARD_RADIUS_Percent
+class BoardCanvas {
+  constructor(selector = '#board') {
+    this.selector = selector;
+    this.canvas = document.querySelector(this.selector);
+    if (!this.canvas) throw new Error(`Canvas not found: ${selector}`);
+    this.ctx = this.canvas.getContext('2d');
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
+    this.updateDerived();
+  }
+
+  updateDerived() {
+    this.cx = this.width / 2;
+    this.cy = this.height / 2;
+    this.BOARD_RADIUS = Math.min(this.width, this.height) * 0.43;
+    this.BOARD_RADIUS_Percent = this.BOARD_RADIUS / DefualtBoardRadius;
+  }
+
+  // setup(width, height) — call to change the canvas pixel dimensions at runtime
+  setup(width, height) {
+    if (typeof width === 'number') {
+      this.canvas.width = width;
+      this.width = width;
+    }
+    if (typeof height === 'number') {
+      this.canvas.height = height;
+      this.height = height;
+    }
+    // refresh context and derived values
+    this.ctx = this.canvas.getContext('2d');
+    this.updateDerived();
+    return this;
+  }
+
+  // convenience alias
+  resize(width, height) { return this.setup(width, height); }
+
+  clear() { this.ctx.clearRect(0, 0, this.width, this.height); }
+}
+
+// instantiate canvas
+const boardCanvas = new BoardCanvas('#board');
 
 // UI elements
 const whiteBar = document.getElementById('whiteBar');
@@ -48,25 +82,24 @@ const undoBtn = document.getElementById('undoBtn');
 const resetBtn = document.getElementById('resetBtn');
 const endTurnBtn = document.getElementById('endTurnBtn');
 
-
-
 // Game state
-let state = {
+const State_Template = {
   players: {
     white: { energy: START_ENERGY },
     black: { energy: START_ENERGY }
   },
   current: 'white', // 'white' or 'black'
-  circles: [], // {owner: 'white'|'black', r: radial distance from center (px), theta: angle (rad), radius: px}
-  turnCount: 0,   // counts switches; initial 0
-  history: [],
+  circles: [], // {owner: 'white'|'black',
+    // r: radial distance from center (radius%), 
+    // theta: angle (rad), 
+    // energy: circleEnergy}
+  turnCount: 0, 
+  history: [],  // {player, action, energyUsed, targetCircle}
   energyUsed: 0,
 };
 
-let rimLeftVisual = 0;
-let rimRightVisual = 0;
+let state = State_Template;
 
-// Whether action has been taken this turn (one action per turn)
 let actionDoneThisTurn = false;
 
 // Helper logging
@@ -78,27 +111,42 @@ function log(msg) {
 }
 
 // Utilities
-function toPolar(x, y) {
-  const dx = x - cx;
-  const dy = y - cy;
+function XYToPolar(x, y) {
+  const dx = x - boardCanvas.cx;
+  const dy = y - boardCanvas.cy;
   const r = Math.sqrt(dx*dx + dy*dy);
   let theta = Math.atan2(dy, dx);
   if (theta < 0) theta += Math.PI * 2;
-  return { r, theta };
+  return { rPercent: r / boardCanvas.BOARD_RADIUS, theta };
 }
 
-function polarToXY(r, theta) {
-  return { x: cx + r * Math.cos(theta), y: cy + r * Math.sin(theta) };
+function polarToXY(rPercent, theta) {
+  return { x: boardCanvas.cx + rPercent * boardCanvas.BOARD_RADIUS * Math.cos(theta), y: boardCanvas.cy + rPercent * boardCanvas.BOARD_RADIUS * Math.sin(theta) };
+}
+
+function energyToRadius(energy) {
+  return (Math.max(6, Math.sqrt(energy / Math.PI) )* boardCanvas.BOARD_RADIUS_Percent);
+}
+
+function disableButtons() {
+  endTurnBtn.disabled = true;
+  resetBtn.disabled = true;
+  undoBtn.disabled = true;
+}
+
+function enableButtons() {
+  endTurnBtn.disabled = !actionDoneThisTurn;
+  resetBtn.disabled = false;
+  undoBtn.disabled = state.history.length === 0;
 }
 
 // Drawing
-function clearcanvas() {
-  ctx.clearRect(0,0,W,H);
-}
-
 function drawCanvasBase() {
+  let ctx = boardCanvas.ctx;
+  let BOARD_RADIUS = boardCanvas.BOARD_RADIUS;
+
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(boardCanvas.cx, boardCanvas.cy);
 
   ctx.beginPath();
   ctx.arc(0,0, BOARD_RADIUS+6, 0, Math.PI*2);
@@ -111,9 +159,12 @@ function drawCanvasBase() {
   ctx.restore();
 }
 
-function drawCanvasBackgrounds() {
+function drawBoardBackground() {
+  let ctx = boardCanvas.ctx;
+  let BOARD_RADIUS = boardCanvas.BOARD_RADIUS;
+
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(boardCanvas.cx, boardCanvas.cy);
 
   //white top
   ctx.beginPath();
@@ -143,13 +194,16 @@ function drawCanvasBackgrounds() {
 }
 
 function drawCircles() {
+  let ctx = boardCanvas.ctx;
+
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(boardCanvas.cx, boardCanvas.cy);
   
   for (const c of state.circles) {
     const { x, y } = polarToXY(c.r, c.theta);
     ctx.beginPath();
-    ctx.arc(x - cx, y - cy, c.radius, 0, Math.PI*2);
+    const circleRadius = energyToRadius(c.energy);
+    ctx.arc(x - boardCanvas.cx, y - boardCanvas.cy, circleRadius, 0, Math.PI*2);
     if (c.owner === 'white') {
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.strokeStyle = 'rgba(0,0,0,0.35)';
@@ -161,18 +215,19 @@ function drawCircles() {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-  
+
   ctx.restore();
 }
 
 function drawCanvasTickMarks() {
+  let ctx = boardCanvas.ctx;
+
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(boardCanvas.cx, boardCanvas.cy);
 
   const ticks = 48;
-  // top half (theta in [0, PI]) — visually use rimRightVisual (top)
+  // top half (theta in [0, PI])
   ctx.save();
-  ctx.rotate(rimRightVisual);
   for (let i=0;i<ticks/2;i++) {
     const a = Math.PI * (i/(ticks/2)) - Math.PI/2; // span top half
     const inner = BOARD_RADIUS - 8;
@@ -184,11 +239,10 @@ function drawCanvasTickMarks() {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-  ctx.restore();
+  boardCanvas.ctx.restore();
 
-  // bottom half (theta in [PI, 2PI]) — visually use rimLeftVisual (bottom)
+  // bottom half (theta in [PI, 2PI])
   ctx.save();
-  ctx.rotate(rimLeftVisual);
   for (let i=0;i<ticks/2;i++) {
     const a = Math.PI + Math.PI * (i/(ticks/2)) - Math.PI/2;
     const inner = BOARD_RADIUS - 8;
@@ -200,18 +254,18 @@ function drawCanvasTickMarks() {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-  ctx.restore();
+  boardCanvas.ctx.restore();
 }
 
 function draw() {
-  clearcanvas();
+  boardCanvas.clear();
   drawCanvasBase();
-  drawCanvasBackgrounds();
+  drawBoardBackground();
   drawCircles();
   drawCanvasTickMarks();
 }
 
-// UI updates
+// UI updates (not the canvas/board)
 function updateUI() {
   const whiteEnergy = state.players.white.energy;
   const blackEnergy = state.players.black.energy;
@@ -225,46 +279,48 @@ function updateUI() {
     spendRange.value = Math.max(1, state.players[state.current].energy);
     spendValue.textContent = spendRange.value;
   }
-  undoBtn.disabled = state.history.length === 0;
-  endTurnBtn.disabled = !actionDoneThisTurn;
+  enableButtons();
 }
 
 // Next-turn energy grant logic
 function nextTurn() {
   state.current = state.current === 'white' ? 'black' : 'white';
   state.turnCount++;
+  let energyToAdd = 0;
   if (state.turnCount >= 2) {
-    state.players[state.current].energy = Math.min(MAX_ENERGY, state.players[state.current].energy + ENERGY_PER_TURN);
-    log(`${state.current.toUpperCase()} gains +${ENERGY_PER_TURN} energy (now ${state.players[state.current].energy}).`);
+    energyToAdd = Math.min(ENERGY_PER_TURN, MAX_ENERGY - state.players[state.current].energy);
+    state.players[state.current].energy = state.players[state.current].energy + energyToAdd;
+    log(`${state.current.toUpperCase()} gains +${energyToAdd} energy (now ${state.players[state.current].energy}).`);
   }
   actionDoneThisTurn = false;
   updateUI();
   draw();
 }
 
-// Collision check: will new circle (at x,y with newRadius) overlap any opponent circle?
-function collidesOpponent(x, y, newRadius, owner) {
+// Collision check: will new circle (at x,y with energy) overlap any opponent circle?
+function collidesOpponent(x, y, energy, owner) {
+  const newRadius = energyToRadius(energy);
   for (const c of state.circles) {
     if (c.owner !== owner) {
-      const { x: cxC, y: cyC } = polarToXY(c.r, c.theta);
-      const dx = cxC - x;
-      const dy = cyC - y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < (c.radius + newRadius) - 0.5) return true;
+      const { x: circleX, y: circleY } = polarToXY(c.r, c.theta);
+      const dx = circleX - x;
+      const dy = circleY - y;
+      const dist = Math.hypot(dx, dy);
+      const circleRadius = energyToRadius(c.energy);
+      if (dist < (circleRadius + newRadius) - 0.5) return true;
     }
   }
   return false;
 }
 
-// Find circle at a click (x,y) within tolerance
+// find circle at x,y for strengthen mode
 function findCircleAt(x, y) {
   for (let i = state.circles.length - 1; i >= 0; i--) {
     const c = state.circles[i];
-    const { x: cxC, y: cyC } = polarToXY(c.r, c.theta);
-    const dx = cxC - x;
-    const dy = cyC - y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist <= c.radius + 6) return c;
+    const { x: circleX, y: circleY } = polarToXY(c.r, c.theta);
+    const dist = Math.hypot(circleX - x, circleY - y);
+    const circleRadius = energyToRadius(c.energy);
+    if (dist <= circleRadius + 6) return c;
   }
   return null;
 }
@@ -279,12 +335,11 @@ function checkValidPlacement(player, energy, x, y) {
     log(`Invalid energy spent by ${player} — action nullified.`);
     return false;
   }
-  if (toPolar(x, y).r > BOARD_RADIUS - 6) {
+  if (XYToPolar(x, y).r * boardCanvas.BOARD_RADIUS > BOARD_RADIUS - 6) {
     log(`${player} tried to place outside the board.`);
     return false;
   }
-  const newRadius = Math.max(6, energy * ENERGY_TO_RADIUS);
-  if (collidesOpponent(x, y, newRadius, player)) {
+  if (collidesOpponent(x, y, energy, player)) {
     log(`${player} cannot place, overlapping opponent's circle.`);
     return false;
   }
@@ -293,15 +348,15 @@ function checkValidPlacement(player, energy, x, y) {
 
 // add circle into game state
 function placeCircle(player, energy, x, y) {
-  const pol = toPolar(x, y);
-  const radius = Math.max(6, energy * ENERGY_TO_RADIUS);
+  const pol = XYToPolar(x, y);
   state.circles.push({
     owner: player,
     r: pol.r,
     theta: pol.theta,
-    radius
+    energy: energy
   });
-  log(`${player} placed a circle spending ${energy} energy.`);
+
+  
 }
 
 // check strengthen action
@@ -322,39 +377,55 @@ function checkValidStrengthen(targetCircle, player, energy) {
 }
 
 // add energy to circle
-function strengthenCircle(targetCircle, player, energy) {
-  const grow = Math.max(1, energy * ENERGY_TO_RADIUS);
-  if (typeof targetCircle.radius !== 'number') targetCircle.radius = 6;
-  targetCircle.radius += grow;
-  
-  log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy.`);
+function strengthenCircle(targetCircle, energy) {
+  if (typeof targetCircle.energy !== 'number') targetCircle.energy = 1; // safeguard
+  const grow = Math.max(1, energy);
+  targetCircle.energy += grow;
+}
+
+// update circle thetas
+function applyRotations(energyUsed=state.energyUsed) {
+  for (const c of state.circles) {
+    c.theta = (c.theta + energyUsed*ROTATION_PER_ENERGY) % (2*Math.PI)
+  }
+}
+
+// End turn
+function endTurn() {
+  if (!actionDoneThisTurn) {
+    log('an action must be taken to end turn.');
+    return;
+  }
+    
+  endTurnBtn.disabled = true;
+  applyRotations();
+  nextTurn();
+  updateUI();
+  draw();
+  if (autoDisableStrengthen.checked) strengthenMode.checked = false;
+  log('Turn ended.');
+  endTurnBtn.disabled = false;
 }
 
 // apply click action onto canvas
 function applyAction({ type, x, y, energy, targetCircle = null }) {
   const player = state.current;
-  state.history.push({
-    players: JSON.parse(JSON.stringify(state.players)),
-    current: state.current,
-    circles: JSON.parse(JSON.stringify(state.circles)),
-    turnCount: state.turnCount,
-    energyUsed: state.energyUsed
-  });
-  undoBtn.disabled = false;
 
   if (type === 'place') {
     if (checkValidPlacement(player, energy, x, y)) {
       placeCircle(player, energy, x, y);
+      state.history.push({player: player, action: "place", energyUsed: energy});
+      log(`${player} placed a circle spending ${energy} energy.`);
     } else {
-      state.history.pop();
       return;
     }
     
   } else if (type === 'strengthen') {
     if (checkValidStrengthen(targetCircle, player, energy)) {
       strengthenCircle(targetCircle, player, energy);
+      state.history.push({player: player, action: "strengthen", energyUsed: energy});
+      log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy.`);
     } else {
-      state.history.pop();
       return;
     }
   }
@@ -363,36 +434,31 @@ function applyAction({ type, x, y, energy, targetCircle = null }) {
   state.players[player].energy -= energy;
   actionDoneThisTurn = true;
   
+  
   updateUI();
   draw();
-}
-
-// update circle thetas
-function applyRotations() {
-  for (const c of state.circles) {
-    c.theta = (c.theta + state.energyUsed*ROTATION_PER_ENERGY) % (2*Math.PI)
+  enableButtons();
+  if (autoEndTurn.checked) {
+    endTurn();
   }
-}
-
-// End turn
-function endTurn() {
-  if (!actionDoneThisTurn) return;
-  endTurnBtn.disabled = true;
-  applyRotations();
-  nextTurn();
-  updateUI();
-  draw();
-  log('Turn ended.');
-  endTurnBtn.disabled = false;
 }
 
 // Undo
 function undo() {
   if (state.history.length === 0) return;
-  const last = state.history.pop();
-  // restore
-  state = last;
-  // clear pending rotations (safe)
+  const lastAction = state.history.pop();
+
+  if (lastAction.action === 'place') {
+    const lastCircle = state.circles.pop();
+    if (!lastCircle) return;
+  } else if (lastAction.action === 'strengthen') {
+    const circle = lastAction.targetCircle;
+    if (!circle) return;
+    circle.energy -= lastAction.energyUsed;
+  }
+  applyRotations(-lastAction.energyUsed);
+  state.players[lastAction.player].energy += lastAction.energyUsed;
+
   actionDoneThisTurn = false;
   updateUI();
   draw();
@@ -402,16 +468,7 @@ function undo() {
 
 // Reset
 function resetGame() {
-  state = {
-    players: { white: { energy: START_ENERGY }, black: { energy: START_ENERGY } },
-    current: 'white',
-    circles: [],
-    turnCount: 0,
-    history: [],
-    energyUsed: 0
-  };
-  rimLeftVisual = 0;
-  rimRightVisual = 0;
+  state = State_Template;
   actionDoneThisTurn = false;
   log('Game reset.');
   updateUI();
@@ -424,9 +481,7 @@ spendRange.addEventListener('input', () => {
 });
 
 // -buttons
-endTurnBtn.addEventListener('click', () => {
-  endTurn();
-});
+endTurnBtn.addEventListener('click', endTurn);
 undoBtn.addEventListener('click', undo);
 resetBtn.addEventListener('click', resetGame);
 
