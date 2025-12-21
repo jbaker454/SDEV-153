@@ -196,21 +196,15 @@ function drawBoardBackground() {
 }
 
 function drawCircles() {
-  let ctx = boardCanvas.ctx;
-
+  const ctx = boardCanvas.ctx;
   ctx.save();
   ctx.translate(boardCanvas.cx, boardCanvas.cy);
-  
-  if (state.circles.length === 0) {
-    ctx.restore();
-    return;
-  }
 
   for (const c of state.circles) {
     const { x, y } = polarToXY(c.r, c.theta);
     ctx.beginPath();
     const circleRadius = energyToRadius(c.energy);
-    ctx.arc(x - boardCanvas.cx, y - boardCanvas.cy, circleRadius, 0, Math.PI*2);
+    ctx.arc(x - boardCanvas.cx, y - boardCanvas.cy, circleRadius, 0, Math.PI * 2);
     if (c.owner === 'white') {
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.strokeStyle = 'rgba(0,0,0,0.35)';
@@ -227,51 +221,52 @@ function drawCircles() {
 }
 
 function drawCanvasTickMarks() {
-  let ctx = boardCanvas.ctx;
-  let BOARD_RADIUS = boardCanvas.BOARD_RADIUS;  // add this line at start
+  const ctx = boardCanvas.ctx;
+  const BOARD_RADIUS = boardCanvas.BOARD_RADIUS;
 
   ctx.save();
   ctx.translate(boardCanvas.cx, boardCanvas.cy);
 
   const ticks = 48;
   // top half (theta in [0, PI])
-  ctx.save();
-  for (let i=0;i<ticks/2;i++) {
-    const a = Math.PI * (i/(ticks/2)) - Math.PI/2; // span top half
+  for (let i = 0; i < ticks / 2; i++) {
+    const a = Math.PI * (i / (ticks / 2)) - Math.PI / 2;
     const inner = BOARD_RADIUS - 8;
     const outer = BOARD_RADIUS + 4;
     ctx.beginPath();
-    ctx.moveTo(inner*Math.cos(a), inner*Math.sin(a));
-    ctx.lineTo(outer*Math.cos(a), outer*Math.sin(a));
+    ctx.moveTo(inner * Math.cos(a), inner * Math.sin(a));
+    ctx.lineTo(outer * Math.cos(a), outer * Math.sin(a));
     ctx.strokeStyle = 'rgba(0,0,0,0.10)';
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-  boardCanvas.ctx.restore();
 
   // bottom half (theta in [PI, 2PI])
-  ctx.save();
-  for (let i=0;i<ticks/2;i++) {
-    const a = Math.PI + Math.PI * (i/(ticks/2)) - Math.PI/2;
+  for (let i = 0; i < ticks / 2; i++) {
+    const a = Math.PI + Math.PI * (i / (ticks / 2)) - Math.PI / 2;
     const inner = BOARD_RADIUS - 8;
     const outer = BOARD_RADIUS + 4;
     ctx.beginPath();
-    ctx.moveTo(inner*Math.cos(a), inner*Math.sin(a));
-    ctx.lineTo(outer*Math.cos(a), outer*Math.sin(a));
+    ctx.moveTo(inner * Math.cos(a), inner * Math.sin(a));
+    ctx.lineTo(outer * Math.cos(a), outer * Math.sin(a));
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-  boardCanvas.ctx.restore();
+
+  ctx.restore();
 }
 
 function draw() {
   boardCanvas.clear();
   drawCanvasBase();
+  log('base drawn.');
   drawBoardBackground();
+  log('board drawn.');
   drawCircles();
+  log('circles drawn.');
   drawCanvasTickMarks();
-  log('Canvas drawn.');
+  log('tick marks drawn.');
 }
 
 // UI updates (not the canvas/board)
@@ -344,7 +339,9 @@ function checkValidPlacement(player, energy, x, y) {
     log(`Invalid energy spent by ${player} — action nullified.`);
     return false;
   }
-  if (XYToPolar(x, y).r > boardCanvas.BOARD_RADIUS - 6) {
+  const pol = XYToPolar(x, y);
+  const pixelR = pol.rPercent * boardCanvas.BOARD_RADIUS;
+  if (pixelR > boardCanvas.BOARD_RADIUS - 6) {
     log(`${player} tried to place outside the board.`);
     return false;
   }
