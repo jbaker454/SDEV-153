@@ -65,6 +65,8 @@ class BoardCanvas {
 
 // instantiate canvas
 const boardCanvas = new BoardCanvas('#board');
+const canvas = boardCanvas.canvas;
+const ctx = boardCanvas.ctx;
 
 // UI elements
 const whiteBar = document.getElementById('whiteBar');
@@ -98,7 +100,7 @@ const State_Template = {
   energyUsed: 0,
 };
 
-let state = State_Template;
+let state = JSON.parse(JSON.stringify(State_Template));
 
 let actionDoneThisTurn = false;
 
@@ -221,6 +223,7 @@ function drawCircles() {
 
 function drawCanvasTickMarks() {
   let ctx = boardCanvas.ctx;
+  let BOARD_RADIUS = boardCanvas.BOARD_RADIUS;  // add this line at start
 
   ctx.save();
   ctx.translate(boardCanvas.cx, boardCanvas.cy);
@@ -378,9 +381,10 @@ function checkValidStrengthen(targetCircle, player, energy) {
 
 // add energy to circle
 function strengthenCircle(targetCircle, energy) {
-  if (typeof targetCircle.energy !== 'number') targetCircle.energy = 1; // safeguard
+  if (typeof targetCircle.energy !== 'number') targetCircle.energy = 1;
   const grow = Math.max(1, energy);
   targetCircle.energy += grow;
+  return grow;  // return grow so applyAction can use it
 }
 
 // update circle thetas
@@ -422,9 +426,9 @@ function applyAction({ type, x, y, energy, targetCircle = null }) {
     
   } else if (type === 'strengthen') {
     if (checkValidStrengthen(targetCircle, player, energy)) {
-      strengthenCircle(targetCircle, player, energy);
-      state.history.push({player: player, action: "strengthen", energyUsed: energy});
-      log(`${player} strengthened their circle (+${grow.toFixed(1)} px) using ${energy} energy.`);
+      const grow = strengthenCircle(targetCircle, energy);
+      state.history.push({player: player, action: "strengthen", energyUsed: energy, targetCircle: targetCircle});
+      log(`${player} strengthened their circle (+${grow.toFixed(1)} energy) using ${energy} energy.`);
     } else {
       return;
     }
@@ -449,16 +453,17 @@ function undo() {
   const lastAction = state.history.pop();
 
   if (lastAction.action === 'place') {
-    const lastCircle = state.circles.pop();
-    if (!lastCircle) return;
+    state.circles.pop();
   } else if (lastAction.action === 'strengthen') {
-    const circle = lastAction.targetCircle;
-    if (!circle) return;
-    circle.energy -= lastAction.energyUsed;
+    if (lastAction.targetCircle) {
+      lastAction.targetCircle.energy -= lastAction.energyUsed;
+    }
   }
-  applyRotations(-lastAction.energyUsed);
+  // reverse rotations by subtracting
+  for (const c of state.circles) {
+    c.theta = (c.theta - lastAction.energyUsed * ROTATION_PER_ENERGY + Math.PI * 2) % (Math.PI * 2);
+  }
   state.players[lastAction.player].energy += lastAction.energyUsed;
-
   actionDoneThisTurn = false;
   updateUI();
   draw();
@@ -468,7 +473,7 @@ function undo() {
 
 // Reset
 function resetGame() {
-  state = State_Template;
+  state = JSON.parse(JSON.stringify(State_Template));
   actionDoneThisTurn = false;
   log('Game reset.');
   updateUI();
