@@ -201,6 +201,11 @@ function drawCircles() {
   ctx.save();
   ctx.translate(boardCanvas.cx, boardCanvas.cy);
   
+  if (state.circles.length === 0) {
+    ctx.restore();
+    return;
+  }
+
   for (const c of state.circles) {
     const { x, y } = polarToXY(c.r, c.theta);
     ctx.beginPath();
@@ -266,6 +271,7 @@ function draw() {
   drawBoardBackground();
   drawCircles();
   drawCanvasTickMarks();
+  log('Canvas drawn.');
 }
 
 // UI updates (not the canvas/board)
@@ -338,7 +344,7 @@ function checkValidPlacement(player, energy, x, y) {
     log(`Invalid energy spent by ${player} — action nullified.`);
     return false;
   }
-  if (XYToPolar(x, y).r * boardCanvas.BOARD_RADIUS > BOARD_RADIUS - 6) {
+  if (XYToPolar(x, y).r > boardCanvas.BOARD_RADIUS - 6) {
     log(`${player} tried to place outside the board.`);
     return false;
   }
