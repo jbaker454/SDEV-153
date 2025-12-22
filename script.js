@@ -215,6 +215,7 @@ function drawCircles() {
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.stroke();
+    log(`Circle placed at (${x.toFixed(0)},${y.toFixed(0)}) with ${c.energy} energy.`);
   }
 
   ctx.restore();
@@ -228,28 +229,22 @@ function drawCanvasTickMarks() {
   ctx.translate(boardCanvas.cx, boardCanvas.cy);
 
   const ticks = 48;
-  // top half (theta in [0, PI])
-  for (let i = 0; i < ticks / 2; i++) {
-    const a = Math.PI * (i / (ticks / 2)) - Math.PI / 2;
+  for (let i = 0; i < ticks; i++) {
+    const a = (i / ticks) * Math.PI * 2 - Math.PI / 2;
     const inner = BOARD_RADIUS - 8;
     const outer = BOARD_RADIUS + 4;
+    const ix = inner * Math.cos(a);
+    const iy = inner * Math.sin(a);
+    const ox = outer * Math.cos(a);
+    const oy = outer * Math.sin(a);
     ctx.beginPath();
-    ctx.moveTo(inner * Math.cos(a), inner * Math.sin(a));
-    ctx.lineTo(outer * Math.cos(a), outer * Math.sin(a));
-    ctx.strokeStyle = 'rgba(0,0,0,0.10)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // bottom half (theta in [PI, 2PI])
-  for (let i = 0; i < ticks / 2; i++) {
-    const a = Math.PI + Math.PI * (i / (ticks / 2)) - Math.PI / 2;
-    const inner = BOARD_RADIUS - 8;
-    const outer = BOARD_RADIUS + 4;
-    ctx.beginPath();
-    ctx.moveTo(inner * Math.cos(a), inner * Math.sin(a));
-    ctx.lineTo(outer * Math.cos(a), outer * Math.sin(a));
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.moveTo(ix, iy);
+    ctx.lineTo(ox, oy);
+    if (iy < 0) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    }
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -260,13 +255,9 @@ function drawCanvasTickMarks() {
 function draw() {
   boardCanvas.clear();
   drawCanvasBase();
-  log('base drawn.');
   drawBoardBackground();
-  log('board drawn.');
   drawCircles();
-  log('circles drawn.');
   drawCanvasTickMarks();
-  log('tick marks drawn.');
 }
 
 // UI updates (not the canvas/board)
