@@ -3,96 +3,40 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Circular Energy Board — Two-player</title>
+  <title>Home — Circular Energy Board</title>
+  <meta name="description" content="Home — Circular Energy Board game. Play a two-player circular energy placement game implemented with Canvas and vanilla JS.">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="left">
-      <div class="card boardBox">
-        <div style="display:flex; gap:12px; align-items:center;">
-          <div class="playerLabel"><div class="dot whiteDot"></div><div class="muted">White</div></div>
-          <div class="playerLabel"><div class="dot blackDot"></div><div class="muted">Black</div></div>
-          <div style="margin-left:auto" class="muted">Click the board to place / strengthen (one action per turn)</div>
-        </div>
-        <div style="height:18px"></div>
-        <canvas id="board" width="720" height="720"></canvas>
-        <div class="legend">
-          <div class="item"><div style="width:12px;height:12px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,0.6)"></div> Your pieces</div>
-          <div class="item"><div style="width:12px;height:12px;border-radius:50%;background:#000;border:1px solid rgba(255,255,255,0.06)"></div> Opponent pieces</div>
-        </div>
-      </div>
+  <div class="topnav">
+    <div class="brand">Circular Energy Board</div>
+    <a href="index.html" class="active">Home</a>
+    <a href="game.html">Game</a>
+    <a href="game_history.html">History</a>
+    <a href="images.html">Images</a>
+    <a href="about.html">About</a>
+  </div>
+
+  <div style="padding:40px; max-width:1100px; margin:0 auto;">
+    <h1 style="color:var(--accent)">Welcome</h1>
+    <p class="muted">This project demonstrates a two-player circular energy board game implemented with Canvas and vanilla JavaScript.</p>
+
+    <div style="display:flex;gap:16px;margin-top:18px;">
+      <a class="card" href="game.html" style="display:block;padding:18px;flex:1">Play game</a>
+      <a class="card" href="game_history.html" style="display:block;padding:18px;flex:1">View history</a>
+      <a class="card" href="images.html" style="display:block;padding:18px;flex:1">Images</a>
+      <a class="card" href="about.html" style="display:block;padding:18px;flex:1">About</a>
     </div>
 
-    <div class="right">
-      <div class="card">
-        <div class="energyRow">
-          <div style="display:flex;flex-direction:column;">
-            <div class="playerLabel"><div class="dot whiteDot"></div><strong id="whiteLabel">White</strong></div>
-            <div class="muted small">Energy</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;">
-            <div class="bar"><div id="whiteBar" class="barFill"></div></div>
-            <div id="whiteEnergyText" class="muted small">100 / 200</div>
-          </div>
-        </div>
-
-        <hr style="opacity:0.06;margin:10px 0;">
-
-        <div class="energyRow">
-          <div style="display:flex;flex-direction:column;">
-            <div class="playerLabel"><div class="dot blackDot"></div><strong id="blackLabel">Black</strong></div>
-            <div class="muted small">Energy</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;">
-            <div class="bar"><div id="blackBar" class="barFill"></div></div>
-            <div id="blackEnergyText" class="muted small">100 / 200</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card controls">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div class="muted small">Current player</div>
-            <div id="currentPlayer" style="font-weight:700">White</div>
-          </div>
-          <div>
-            <label><input type="checkbox" id="autoEndTurn"> Auto End Turn</label>
-            <label><input type="checkbox" id="autoDisableStrengthen"> Auto-disable Strengthen</label>
-            <label><input type="checkbox" id="strengthenMode"> Strengthen mode</label>
-          </div>
-        </div>
-
-        <div>
-          <div class="muted small">Energy to spend</div>
-          <div class="row">
-            <input id="spendRange" type="range" min="1" max="200" value="20">
-            <div style="width:48px;text-align:right" id="spendValue">20</div>
-          </div>
-          <div class="muted small">Tip: choose how much energy to spend, then click the board to apply it. After your action, press End Turn to animate rotation.</div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <button id="endTurnBtn" disabled>End Turn</button>
-          <button id="undoBtn" disabled>Undo last</button>
-          <button id="resetBtn">Reset game</button>
-        </div>
-
-        <div style="margin-top:8px" class="muted small">
-          Rules summary: one action per turn (place or strengthen). Can't place overlapping opponent circles. Each turn the next player receives +50 energy (cap 200) after the first round. 50 energy → 1 radian of rotation for the half where the action happened. Rotation is animated when you click "End Turn".
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="muted small">Game log</div>
-        <div id="log" style="height:160px;overflow:auto;margin-top:8px;font-size:13px;color:#cfeef3"></div>
-      </div>
-
-      <div class="footer">Built with JS + Canvas · By Joshua Baker · V-0.1.16</div>
+    <div style="margin-top:24px" class="card">
+      <h3>Quick start</h3>
+      <ol>
+        <li>Choose energy using the slider.</li>
+        <li>Click the board to place or strengthen a circle.</li>
+        <li>Press "End Turn" to animate rotation and pass play.</li>
+      </ol>
     </div>
   </div>
 
-  <script src="script.js"></script>
 </body>
 </html>

@@ -27,3 +27,8 @@ button { background:var(--accent); color:#04201f; border:0; padding:8px 12px; bo
 .legend { display:flex; gap:10px; align-items:center; margin-top:6px; }
 .legend .item { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); }
 .footer { margin-top:auto; font-size:12px; color:var(--muted); text-align:center; }
+/* navbar */
+.topnav { display:flex; gap:16px; align-items:center; padding:12px 20px; background:linear-gradient(180deg,#071018,#0b0f12); border-bottom:1px solid rgba(255,255,255,0.03); }
+.topnav .brand { font-weight:800; color:var(--accent); margin-right:8px; }
+.topnav a { color:#cfeef3; text-decoration:none; padding:6px 10px; border-radius:8px; }
+.topnav a.active, .topnav a:hover { background:rgba(255,255,255,0.03); color:var(--accent); }
