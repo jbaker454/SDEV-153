@@ -267,7 +267,7 @@ function drawCanvasTickMarks() {
     if (iy < 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     } else {
-      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
     }
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -568,14 +568,6 @@ const onResize = debounce(() => {
 }, 150);
 
 window.addEventListener('resize', onResize, { passive: true });
-if (window.ResizeObserver) {
-  try {
-    const ro = new ResizeObserver(onResize);
-    ro.observe(canvas);
-  } catch (e) {
-    /* ignore if ResizeObserver not available */
-  }
-}
 
 // initial setup and draw
 setupCanvasForDPR();
