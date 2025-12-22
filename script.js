@@ -204,7 +204,7 @@ function drawCircles() {
     const { x, y } = polarToXY(c.r, c.theta);
     ctx.beginPath();
     const circleRadius = energyToRadius(c.energy);
-    ctx.arc(x - boardCanvas.cx, y - boardCanvas.cy, circleRadius, 0, Math.PI * 2);
+    ctx.arc(x - boardCanvas.cx, y - boardCanvas.cy, circleRadius + 6, 0, Math.PI * 2);
     if (c.owner === 'white') {
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.strokeStyle = 'rgba(0,0,0,0.35)';
@@ -231,8 +231,9 @@ function drawCanvasTickMarks() {
   const ticks = 48;
   for (let i = 0; i < ticks; i++) {
     const a = (i / ticks) * Math.PI * 2 - Math.PI / 2;
-    const inner = BOARD_RADIUS - 8;
-    const outer = BOARD_RADIUS + 4;
+    // move ticks slightly inward to reduce overlap with circle outlines
+    const inner = BOARD_RADIUS - 12;
+    const outer = BOARD_RADIUS + 6;
     const ix = inner * Math.cos(a);
     const iy = inner * Math.sin(a);
     const ox = outer * Math.cos(a);
@@ -240,10 +241,11 @@ function drawCanvasTickMarks() {
     ctx.beginPath();
     ctx.moveTo(ix, iy);
     ctx.lineTo(ox, oy);
+    // pick color with better contrast: lighter ticks on top, darker on bottom
     if (iy < 0) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     } else {
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
     }
     ctx.lineWidth = 2;
     ctx.stroke();

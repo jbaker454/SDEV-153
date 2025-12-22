@@ -22,9 +22,64 @@
     <p class="muted">Placeholder for project images / screenshots.</p>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px">
-      <div class="card" style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Screenshot 1</div>
-      <div class="card" style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Screenshot 2</div>
-      <div class="card" style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Screenshot 3</div>
+      <div class="card" style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--muted)">
+        <img src="screenshot 2025-12-21 asset" alt="Screenshot 1" style="max-width:100%;max-height:100%;object-fit:contain">
+      </div>
+      <div class="card" style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--muted)">
+        <img src="screenshot 2025-12-21 asset" alt="Screenshot 2" style="max-width:100%;max-height:100%;object-fit:contain">
+      </div>
+      <div class="card" style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--muted)">
+        <img src="screenshot 2025-12-21 asset" alt="Screenshot 3" style="max-width:100%;max-height:100%;object-fit:contain">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:18px;align-items:flex-start;">
+      <div class="card" style="flex:1">
+        <h4 class="muted">Search / Contact</h4>
+        <form id="imageForm">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="q" name="q" placeholder="Search images" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+            <button type="submit">Search</button>
+          </div>
+          <div style="margin-top:8px" class="muted small">Or send feedback:</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input type="email" id="email" name="email" placeholder="you@example.com" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+            <button type="button" id="sendFeedback">Send</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" style="flex:1;min-width:320px">
+        <h4 class="muted">Image metadata</h4>
+        <div style="overflow:auto;margin-top:8px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="text-align:left;color:var(--muted)">
+                <th style="padding:6px">Name</th>
+                <th style="padding:6px">Size</th>
+                <th style="padding:6px">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:6px">screenshot1.png</td>
+                <td style="padding:6px">1280×720</td>
+                <td style="padding:6px">Main board — initial state</td>
+              </tr>
+              <tr>
+                <td style="padding:6px">screenshot2.png</td>
+                <td style="padding:6px">1280×720</td>
+                <td style="padding:6px">After placing circles</td>
+              </tr>
+              <tr>
+                <td style="padding:6px">screenshot3.png</td>
+                <td style="padding:6px">1280×720</td>
+                <td style="padding:6px">End-turn rotation animation</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </body>
