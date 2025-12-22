@@ -348,7 +348,7 @@ function placeCircle(player, energy, x, y) {
   const pol = XYToPolar(x, y);
   state.circles.push({
     owner: player,
-    r: pol.r,
+    r: pol.rPercent,
     theta: pol.theta,
     energy: energy
   });
