@@ -65,8 +65,30 @@ class BoardCanvas {
 
 // instantiate canvas
 const boardCanvas = new BoardCanvas('#board');
-const canvas = boardCanvas.canvas;
-const ctx = boardCanvas.ctx;
+let canvas = boardCanvas.canvas;
+let ctx = boardCanvas.ctx;
+
+// helper to refresh module-level canvas/context after resize or setup
+function refreshCanvasGlobals() {
+  canvas = boardCanvas.canvas;
+  ctx = boardCanvas.ctx;
+}
+
+// small debounce helper
+function debounce(fn, wait = 120) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}
+
+// convert pointer/touch/mouse event to canvas coordinates
+function getEventCoords(ev) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = ev.clientX ?? (ev.touches && ev.touches[0] && ev.touches[0].clientX);
+  const clientY = ev.clientY ?? (ev.touches && ev.touches[0] && ev.touches[0].clientY);
+  const x = (clientX - rect.left) * (canvas.width / rect.width);
+  const y = (clientY - rect.top) * (canvas.height / rect.height);
+  return { x, y };
+}
 
 // UI elements
 const whiteBar = document.getElementById('whiteBar');
@@ -486,38 +508,77 @@ endTurnBtn.addEventListener('click', endTurn);
 undoBtn.addEventListener('click', undo);
 resetBtn.addEventListener('click', resetGame);
 
-// -handle clicks
-canvas.addEventListener('click', (ev) => {
+// Pointer and keyboard handlers (works for mouse/touch/pen and improves accessibility)
+canvas.addEventListener('pointerdown', (ev) => {
+  ev.preventDefault();
   if (actionDoneThisTurn) {
     log('Action already taken this turn — press End Turn (or Undo).');
     return;
   }
-  const rect = canvas.getBoundingClientRect();
-  const x = (ev.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (ev.clientY - rect.top) * (canvas.height / rect.height);
+  const { x, y } = getEventCoords(ev);
   const player = state.current;
   const spend = parseInt(spendRange.value, 10);
 
   if (strengthenMode.checked) {
-    // find circle under click
     const c = findCircleAt(x, y);
-    if (!c) {
-      log(`${player} clicked strengthen mode but no circle found.`);
-      return;
-    }
-    if (c.owner !== player) {
-      log(`${player} cannot strengthen opponent's circle.`);
-      return;
-    }
-    // apply strengthen
+    if (!c) { log(`${player} clicked strengthen mode but no circle found.`); return; }
+    if (c.owner !== player) { log(`${player} cannot strengthen opponent's circle.`); return; }
     applyAction({ type: 'strengthen', x, y, energy: spend, targetCircle: c });
   } else {
-    // place
     applyAction({ type: 'place', x, y, energy: spend });
+  }
+}, { passive: false });
+
+// keyboard interactions for canvas (Enter/Space to act, arrows adjust spend)
+canvas.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') { strengthenMode.checked = false; return; }
+  if (ev.key === 'Enter' || ev.key === ' ') {
+    ev.preventDefault();
+    // act at canvas center by default
+    const x = canvas.width / 2;
+    const y = canvas.height / 2;
+    const spend = parseInt(spendRange.value, 10);
+    if (strengthenMode.checked) {
+      const c = findCircleAt(x, y);
+      if (c && c.owner === state.current) applyAction({ type: 'strengthen', x, y, energy: spend, targetCircle: c });
+    } else {
+      applyAction({ type: 'place', x, y, energy: spend });
+    }
+  } else if (ev.key === 'ArrowRight') {
+    spendRange.value = Math.min(parseInt(spendRange.max,10), parseInt(spendRange.value,10) + 1);
+    spendValue.textContent = spendRange.value;
+  } else if (ev.key === 'ArrowLeft') {
+    spendRange.value = Math.max(1, parseInt(spendRange.value,10) - 1);
+    spendValue.textContent = spendRange.value;
   }
 });
 
-// Init
+// Responsive initialization: scale canvas for device pixel ratio and observe resizes
+function setupCanvasForDPR() {
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const w = Math.round(canvas.clientWidth * dpr);
+  const h = Math.round(canvas.clientHeight * dpr);
+  boardCanvas.setup(w, h);
+  refreshCanvasGlobals();
+}
+
+const onResize = debounce(() => {
+  setupCanvasForDPR();
+  draw();
+}, 150);
+
+window.addEventListener('resize', onResize, { passive: true });
+if (window.ResizeObserver) {
+  try {
+    const ro = new ResizeObserver(onResize);
+    ro.observe(canvas);
+  } catch (e) {
+    /* ignore if ResizeObserver not available */
+  }
+}
+
+// initial setup and draw
+setupCanvasForDPR();
 updateUI();
 draw();
-log('Game started. White goes first with 100 energy. Choose energy then click the board to act. After acting press End Turn.');
+log('Game started. White goes first with 100 energy. Choose energy then click or tap the board to act. Use keyboard for accessibility.');

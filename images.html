@@ -37,13 +37,15 @@
       <div class="card" style="flex:1">
         <h4 class="muted">Search / Contact</h4>
         <form id="imageForm">
+          <label for="q" class="sr-only">Search images</label>
           <div style="display:flex;gap:8px;align-items:center">
-            <input type="text" id="q" name="q" placeholder="Search images" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+            <input type="text" id="q" name="q" placeholder="Search images" aria-label="Search images" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
             <button type="submit">Search</button>
           </div>
           <div style="margin-top:8px" class="muted small">Or send feedback:</div>
+          <label for="email" class="sr-only">Your email</label>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <input type="email" id="email" name="email" placeholder="you@example.com" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+            <input type="email" id="email" name="email" placeholder="you@example.com" aria-label="Your email" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
             <button type="button" id="sendFeedback">Send</button>
           </div>
         </form>

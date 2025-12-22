@@ -26,7 +26,7 @@
           <div style="margin-left:auto" class="muted">Click the board to place / strengthen (one action per turn)</div>
         </div>
         <div style="height:18px"></div>
-        <canvas id="board" width="720" height="720"></canvas>
+        <canvas id="board" width="720" height="720" role="application" aria-label="Interactive game board" tabindex="0"></canvas>
         <div class="legend">
           <div class="item"><div style="width:12px;height:12px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,0.6)"></div> Your pieces</div>
           <div class="item"><div style="width:12px;height:12px;border-radius:50%;background:#000;border:1px solid rgba(255,255,255,0.06)"></div> Opponent pieces</div>
@@ -96,10 +96,10 @@
 
       <div class="card">
         <div class="muted small">Game log</div>
-        <div id="log" style="height:160px;overflow:auto;margin-top:8px;font-size:13px;color:#cfeef3"></div>
+        <div id="log" aria-live="polite" style="height:160px;overflow:auto;margin-top:8px;font-size:13px;color:#cfeef3"></div>
       </div>
 
-      <div class="footer">Built with JS + Canvas · By Joshua Baker · V-0.2.2</div>
+      <div class="footer">Built with JS + Canvas · By Joshua Baker · V-0.2.3</div>
     </div>
   </div>
 
